@@ -197,10 +197,18 @@
             <div id="checkout-erro" class="hidden mt-4 rounded-2xl border border-red-200 bg-red-50 text-red-700 text-sm px-4 py-3"></div>
 
             <button
-                onclick="enviarWhatsApp()"
+                onclick="iniciarEnvioWhatsApp()"
                 class="w-full bg-green-600 text-white rounded-2xl py-4 font-black mt-8"
             >
                 Enviar Pedido no WhatsApp
+            </button>
+
+            <button
+                id="confirmar-envio-btn"
+                onclick="confirmarEnvioWhatsApp()"
+                class="hidden w-full bg-orange-500 text-white rounded-2xl py-4 font-black mt-3"
+            >
+                Já enviei no WhatsApp, finalizar pedido
             </button>
 
             <a href="{{ url('/cardapio') }}" class="block w-full text-center bg-zinc-900 text-white rounded-2xl py-3 font-black mt-3">

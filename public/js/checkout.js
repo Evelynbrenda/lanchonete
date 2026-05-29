@@ -1,5 +1,6 @@
 const WHATSAPP = '558899567857';
 const ROTAS_ENTREGA = window.ROTAS_ENTREGA || {};
+let pedidoPendente = null;
 
 function mostrarErroCheckout(mensagem) {
     const box = document.getElementById('checkout-erro');
@@ -127,122 +128,55 @@ function renderizarCheckout() {
     totalElemento.innerText = formatarPreco(total);
 }
 
-async function enviarWhatsApp() {
-    limparErroCheckout();
-
-    let carrinho = pegarCarrinho();
-
-    if (carrinho.length === 0) {
-        const msg = 'Seu carrinho está vazio.';
-        mostrarErroCheckout(msg);
-        alert(msg);
-        return;
-    }
-
-    let nome = document.getElementById('nome').value.trim();
-    let telefone = document.getElementById('telefone').value.trim();
-    let tipoAtendimento = document.getElementById('tipo-atendimento').value;
+function montarPayloadPedido() {
+    const carrinho = pegarCarrinho();
+    const nome = document.getElementById('nome').value.trim();
+    const telefone = document.getElementById('telefone').value.trim();
+    const tipoAtendimento = document.getElementById('tipo-atendimento').value;
     let endereco = document.getElementById('endereco').value.trim();
-    let mesaNumero = document.getElementById('mesa-numero').value.trim();
-    let rotaEntregaKey = document.getElementById('rota-entrega').value;
-    let rotaSelecionada = ROTAS_ENTREGA[rotaEntregaKey] || null;
-    let pagamento = document.getElementById('pagamento').value;
-    let observacao = document.getElementById('observacao').value.trim();
+    const mesaNumero = document.getElementById('mesa-numero').value.trim();
+    const rotaEntregaKey = document.getElementById('rota-entrega').value;
+    const rotaSelecionada = ROTAS_ENTREGA[rotaEntregaKey] || null;
+    const pagamento = document.getElementById('pagamento').value;
+    const observacao = document.getElementById('observacao').value.trim();
 
-    if (!nome || !telefone) {
-        const msg = 'Preencha nome e telefone.';
-        mostrarErroCheckout(msg);
-        alert(msg);
-        return;
-    }
+    return {
+        carrinho,
+        nome,
+        telefone,
+        tipoAtendimento,
+        endereco,
+        mesaNumero,
+        rotaEntregaKey,
+        rotaSelecionada,
+        pagamento,
+        observacao
+    };
+}
 
-    if (!tipoAtendimento) {
-        const msg = 'Selecione o tipo de atendimento.';
-        mostrarErroCheckout(msg);
-        alert(msg);
-        return;
-    }
+function validarDadosAntesEnvio(dados) {
+    if (dados.carrinho.length === 0) return 'Seu carrinho está vazio.';
+    if (!dados.nome || !dados.telefone) return 'Preencha nome e telefone.';
+    if (!dados.tipoAtendimento) return 'Selecione o tipo de atendimento.';
+    if (!dados.pagamento) return 'Selecione a forma de pagamento.';
+    if (dados.tipoAtendimento === 'entrega' && !dados.rotaSelecionada) return 'Selecione uma rota de entrega.';
+    if (dados.tipoAtendimento === 'entrega' && !dados.endereco) return 'Informe o endereço para entrega.';
+    return null;
+}
 
-    if (!pagamento) {
-        const msg = 'Selecione a forma de pagamento.';
-        mostrarErroCheckout(msg);
-        alert(msg);
-        return;
-    }
-
-    if (tipoAtendimento === 'entrega' && !rotaSelecionada) {
-        const msg = 'Selecione uma rota de entrega.';
-        mostrarErroCheckout(msg);
-        alert(msg);
-        return;
-    }
-
-    let taxaEntrega = obterTaxaEntregaAtual();
-    if (tipoAtendimento === 'entrega') {
-        if (!endereco) {
-            const msg = 'Informe o endereço para entrega.';
-            mostrarErroCheckout(msg);
-            alert(msg);
-            return;
-        }
-    } else {
-        endereco = '';
-    }
-    let pedido;
-
-    try {
-        const response = await fetch('/pedidos', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document
-                    .querySelector('meta[name="csrf-token"]')
-                    .getAttribute('content')
-            },
-            body: JSON.stringify({
-                cliente_nome: nome,
-                cliente_telefone: telefone,
-                cliente_endereco: endereco,
-                tipo_atendimento: tipoAtendimento,
-                rota_entrega: tipoAtendimento === 'entrega' ? rotaEntregaKey : null,
-                mesa_numero: tipoAtendimento === 'retirada' ? mesaNumero : null,
-                taxa_entrega: taxaEntrega,
-                forma_pagamento: pagamento,
-                observacao: observacao,
-                itens: carrinho
-            })
-        });
-
-        if (!response.ok) {
-            let erroMensagem = `Erro ao salvar pedido (${response.status}).`;
-            try {
-                const erroJson = await response.json();
-                if (erroJson && erroJson.message) {
-                    erroMensagem = erroJson.message;
-                }
-            } catch (_) {
-                const erroTexto = await response.text();
-                if (erroTexto && erroTexto.trim()) {
-                    erroMensagem = `${erroMensagem} ${erroTexto.substring(0, 200)}`;
-                }
-            }
-            mostrarErroCheckout(erroMensagem);
-            alert(erroMensagem);
-            return;
-        }
-
-        pedido = await response.json();
-    } catch (erro) {
-        console.error('Falha de rede ao salvar pedido:', erro);
-        const msg = 'Nao foi possivel conectar ao servidor para salvar o pedido.';
-        mostrarErroCheckout(msg);
-        alert(msg);
+function iniciarEnvioWhatsApp() {
+    limparErroCheckout();
+    const dados = montarPayloadPedido();
+    const erroValidacao = validarDadosAntesEnvio(dados);
+    if (erroValidacao) {
+        mostrarErroCheckout(erroValidacao);
+        alert(erroValidacao);
         return;
     }
 
     let subtotalPedido = 0;
 
-    let itens = carrinho.map(item => {
+    let itens = dados.carrinho.map(item => {
         let subtotalItem = Number(item.preco) * Number(item.quantidade);
         subtotalPedido += subtotalItem;
 
@@ -250,15 +184,16 @@ async function enviarWhatsApp() {
         return `• ${item.quantidade}x ${item.nome}${detalhe} - ${formatarPreco(subtotalItem)}`;
     }).join('\n');
 
-    const tipoFormatado = tipoAtendimento === 'entrega' ? 'Entrega' : 'Retirada';
-    const enderecoFormatado = tipoAtendimento === 'entrega'
-        ? (endereco || 'Não informado')
+    const tipoFormatado = dados.tipoAtendimento === 'entrega' ? 'Entrega' : 'Retirada';
+    const enderecoFormatado = dados.tipoAtendimento === 'entrega'
+        ? (dados.endereco || 'Não informado')
         : 'Retirada no local';
-    const rotaFormatada = tipoAtendimento === 'entrega' && rotaSelecionada ? rotaSelecionada.nome : 'Não se aplica';
-    const observacaoFormatada = observacao || 'Nenhuma';
+    const rotaFormatada = dados.tipoAtendimento === 'entrega' && dados.rotaSelecionada ? dados.rotaSelecionada.nome : 'Não se aplica';
+    const observacaoFormatada = dados.observacao || 'Nenhuma';
+    const taxaEntrega = obterTaxaEntregaAtual();
 
     let mensagem = [
-        `*NOVO PEDIDO #${pedido.pedido_id}*`,
+        `*NOVO PEDIDO*`,
         '',
         `*Data/Hora:* ${new Date().toLocaleString('pt-BR')}`,
         `*Tipo:* ${tipoFormatado}`,
@@ -272,22 +207,57 @@ async function enviarWhatsApp() {
         `*Total: ${formatarPreco(subtotalPedido + taxaEntrega)}*`,
         '',
         `*DADOS DO CLIENTE*`,
-        `Nome: ${nome}`,
-        `Telefone: ${telefone}`,
+        `Nome: ${dados.nome}`,
+        `Telefone: ${dados.telefone}`,
         `Rota: ${rotaFormatada}`,
         `Endereço: ${enderecoFormatado}`,
-        `Pagamento: ${pagamento}`,
+        `Pagamento: ${dados.pagamento}`,
         `Observação: ${observacaoFormatada}`,
     ].join('\n');
 
-    let url = `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(mensagem)}`;
+    const texto = encodeURIComponent(mensagem);
+    const urlWeb = `https://wa.me/${WHATSAPP}?text=${texto}`;
+    const urlApp = `whatsapp://send?phone=${WHATSAPP}&text=${texto}`;
 
-    localStorage.removeItem('carrinho');
+    pedidoPendente = {
+        cliente_nome: dados.nome,
+        cliente_telefone: dados.telefone,
+        cliente_endereco: dados.tipoAtendimento === 'entrega' ? dados.endereco : '',
+        tipo_atendimento: dados.tipoAtendimento,
+        rota_entrega: dados.tipoAtendimento === 'entrega' ? dados.rotaEntregaKey : null,
+        mesa_numero: dados.tipoAtendimento === 'retirada' ? dados.mesaNumero : null,
+        taxa_entrega: taxaEntrega,
+        forma_pagamento: dados.pagamento,
+        observacao: dados.observacao,
+        itens: dados.carrinho
+    };
 
-    window.open(url, '_blank');
+    const confirmarBtn = document.getElementById('confirmar-envio-btn');
+    if (confirmarBtn) {
+        confirmarBtn.classList.remove('hidden');
+    }
+
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+    if (isMobile) {
+        window.location.href = urlApp;
+        setTimeout(() => {
+            if (!document.hidden) {
+                window.location.href = urlWeb;
+            }
+        }, 1200);
+        setTimeout(() => {
+            window.location.href = '/';
+        }, 2600);
+        return;
+    }
+
+    const popup = window.open(urlWeb, '_blank');
+    if (!popup) {
+        window.location.href = urlWeb;
+    }
     setTimeout(() => {
         window.location.href = '/';
-    }, 400);
+    }, 600);
 
 
 }
@@ -333,6 +303,51 @@ function alterartipoatendimento() {
         document.getElementById('mesa-numero').value = '';
         inputEndereco.value = '';
     }
+}
+
+async function confirmarEnvioWhatsApp() {
+    if (!pedidoPendente) {
+        const msg = 'Nenhum pedido pendente para confirmar.';
+        mostrarErroCheckout(msg);
+        alert(msg);
+        return;
+    }
+
+    try {
+        const response = await fetch('/pedidos', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document
+                    .querySelector('meta[name="csrf-token"]')
+                    .getAttribute('content')
+            },
+            body: JSON.stringify(pedidoPendente)
+        });
+
+        if (!response.ok) {
+            let erroMensagem = `Erro ao salvar pedido (${response.status}).`;
+            try {
+                const erroJson = await response.json();
+                if (erroJson && erroJson.message) {
+                    erroMensagem = erroJson.message;
+                }
+            } catch (_) {}
+            mostrarErroCheckout(erroMensagem);
+            alert(erroMensagem);
+            return;
+        }
+    } catch (erro) {
+        console.error('Falha de rede ao salvar pedido:', erro);
+        const msg = 'Nao foi possivel conectar ao servidor para salvar o pedido.';
+        mostrarErroCheckout(msg);
+        alert(msg);
+        return;
+    }
+
+    localStorage.removeItem('carrinho');
+    pedidoPendente = null;
+    window.location.href = '/';
 }
 function inicializarCheckout() {
     preencherRotasEntrega();
