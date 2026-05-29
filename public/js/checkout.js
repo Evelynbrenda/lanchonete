@@ -2,11 +2,18 @@ const WHATSAPP = '558899567857';
 const ROTAS_ENTREGA = window.ROTAS_ENTREGA || {};
 
 function pegarCarrinho() {
-    return JSON.parse(localStorage.getItem('carrinho')) || [];
+    try {
+        const valor = JSON.parse(localStorage.getItem('carrinho'));
+        return Array.isArray(valor) ? valor : [];
+    } catch (_) {
+        localStorage.removeItem('carrinho');
+        return [];
+    }
 }
 
 function formatarPreco(valor) {
-    return valor.toLocaleString('pt-BR', {
+    const numero = Number(valor) || 0;
+    return numero.toLocaleString('pt-BR', {
         style: 'currency',
         currency: 'BRL'
     });
@@ -267,37 +274,69 @@ function alterartipoatendimento() {
         campoEntrega.classList.remove('hidden');
         campoMesa.style.display = 'none';
         campoMesa.classList.add('hidden');
+        document.getElementById('rota-entrega').disabled = false;
+        document.getElementById('endereco').disabled = false;
+        document.getElementById('mesa-numero').disabled = true;
+        document.getElementById('mesa-numero').value = '';
     } else if (tipo === 'retirada') {
         campoEntrega.style.display = 'none';
         campoEntrega.classList.add('hidden');
         campoMesa.style.display = 'block';
         campoMesa.classList.remove('hidden');
+        document.getElementById('rota-entrega').disabled = true;
+        document.getElementById('endereco').disabled = true;
+        document.getElementById('mesa-numero').disabled = false;
+        document.getElementById('rota-entrega').value = '';
         inputEndereco.value = '';
     } else {
         campoEntrega.style.display = 'none';
         campoEntrega.classList.add('hidden');
         campoMesa.style.display = 'none';
         campoMesa.classList.add('hidden');
+        document.getElementById('rota-entrega').disabled = true;
+        document.getElementById('endereco').disabled = true;
+        document.getElementById('mesa-numero').disabled = true;
+        document.getElementById('rota-entrega').value = '';
+        document.getElementById('mesa-numero').value = '';
         inputEndereco.value = '';
     }
 }
+function inicializarCheckout() {
+    preencherRotasEntrega();
 
-preencherRotasEntrega();
-const selectRota = document.getElementById('rota-entrega');
-if (selectRota) {
-    selectRota.addEventListener('change', () => {
-        renderizarCheckout();
-    });
-}
-const selectTipo = document.getElementById('tipo-atendimento');
-if (selectTipo) {
-    selectTipo.addEventListener('change', alterartipoatendimento);
-    selectTipo.addEventListener('change', renderizarCheckout);
-}
-window.addEventListener('storage', (event) => {
-    if (event.key === 'carrinho') {
-        renderizarCheckout();
+    const selectTipo = document.getElementById('tipo-atendimento');
+    const selectRota = document.getElementById('rota-entrega');
+    const selectPagamento = document.getElementById('pagamento');
+
+    if (selectTipo && !selectTipo.value) {
+        selectTipo.value = '';
     }
-});
-alterartipoatendimento();
-renderizarCheckout();
+    if (selectRota && !selectRota.value) {
+        selectRota.value = '';
+    }
+    if (selectPagamento && !selectPagamento.value) {
+        selectPagamento.value = '';
+    }
+
+    if (selectRota) {
+        selectRota.addEventListener('change', renderizarCheckout);
+    }
+    if (selectTipo) {
+        selectTipo.addEventListener('change', alterartipoatendimento);
+        selectTipo.addEventListener('change', renderizarCheckout);
+    }
+    window.addEventListener('storage', (event) => {
+        if (event.key === 'carrinho') {
+            renderizarCheckout();
+        }
+    });
+
+    alterartipoatendimento();
+    renderizarCheckout();
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', inicializarCheckout);
+} else {
+    inicializarCheckout();
+}
