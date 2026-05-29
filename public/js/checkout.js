@@ -253,32 +253,47 @@ async function enviarWhatsApp() {
 }
 
 function alterartipoatendimento() {
-    let tipo = document.getElementById('tipo-atendimento').value;
+    const selectTipo = document.getElementById('tipo-atendimento');
+    const campoEntrega = document.getElementById('campo-entrega');
+    const campoMesa = document.getElementById('campo-mesa');
+    const inputEndereco = document.getElementById('endereco');
 
-    let campoEntrega = document.getElementById('campo-entrega');
-    let campoMesa = document.getElementById('campo-mesa');
-    let inputEndereco = document.getElementById('endereco');
+    if (!selectTipo || !campoEntrega || !campoMesa || !inputEndereco) return;
+
+    let tipo = selectTipo.value;
 
     if (tipo === 'entrega') {
         campoEntrega.style.display = 'block';
+        campoEntrega.classList.remove('hidden');
+        campoMesa.style.display = 'none';
         campoMesa.classList.add('hidden');
     } else if (tipo === 'retirada') {
         campoEntrega.style.display = 'none';
+        campoEntrega.classList.add('hidden');
+        campoMesa.style.display = 'block';
         campoMesa.classList.remove('hidden');
         inputEndereco.value = '';
     } else {
         campoEntrega.style.display = 'none';
+        campoEntrega.classList.add('hidden');
+        campoMesa.style.display = 'none';
         campoMesa.classList.add('hidden');
         inputEndereco.value = '';
     }
 }
 
 preencherRotasEntrega();
-document.getElementById('rota-entrega').addEventListener('change', () => {
-    renderizarCheckout();
-});
-document.getElementById('tipo-atendimento').addEventListener('change', alterartipoatendimento);
-document.getElementById('tipo-atendimento').addEventListener('change', renderizarCheckout);
+const selectRota = document.getElementById('rota-entrega');
+if (selectRota) {
+    selectRota.addEventListener('change', () => {
+        renderizarCheckout();
+    });
+}
+const selectTipo = document.getElementById('tipo-atendimento');
+if (selectTipo) {
+    selectTipo.addEventListener('change', alterartipoatendimento);
+    selectTipo.addEventListener('change', renderizarCheckout);
+}
 window.addEventListener('storage', (event) => {
     if (event.key === 'carrinho') {
         renderizarCheckout();

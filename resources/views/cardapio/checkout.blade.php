@@ -224,7 +224,7 @@
 <script>
     window.ROTAS_ENTREGA = @json($rotasEntregaJson);
 </script>
-<script src="{{ asset('js/checkout.js') }}"></script>
+<script src="{{ asset('js/checkout.js') }}?v={{ @filemtime(public_path('js/checkout.js')) }}"></script>
 
 </body>
 </html>
