@@ -1,104 +1,121 @@
-php<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Lanchonete do Márcio - Sistema Web de Pedidos
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Sistema web de pedidos para lanchonete, com cardápio online, checkout via WhatsApp e painel administrativo para operação diária.
 
-## About Laravel
+## Tecnologias
+- Laravel (Blade)
+- TailwindCSS
+- JavaScript puro
+- MySQL
+- Docker / Docker Compose
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Funcionalidades principais
+- Cardápio público com busca, filtros e categorias.
+- Carrinho em `localStorage`.
+- Checkout com:
+  - tipo de atendimento (entrega/retirada)
+  - cálculo de taxa de entrega por rota
+  - envio da mensagem para WhatsApp
+- Salvamento de pedido no banco antes do envio no WhatsApp.
+- Painel admin com:
+  - Dashboard
+  - Pedidos (filtros + atualização de status)
+  - Produtos
+  - Categorias (com regras de adicionais/opções/tamanhos)
+  - Conteúdo do site (institucional, avisos, promoções, funcionamento, rotas)
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Fluxo operacional
+1. Cliente acessa `/cardapio`.
+2. Monta pedido e vai para `/checkout`.
+3. Sistema valida dados e grava pedido em `/pedidos`.
+4. WhatsApp abre com mensagem formatada do pedido.
+5. Admin acompanha e atualiza status em `/admin/pedidos`.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Status de pedido
+- `novo`
+- `preparando`
+- `pronto`
+- `saiu_para_entrega`
+- `entregue`
+- `cancelado`
 
-## Learning Laravel
+## Requisitos locais
+- PHP 8.1+
+- Composer
+- Node (opcional, se for compilar assets)
+- MySQL 8+
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## Instalação (sem Docker)
+```bash
+cp .env.example .env
+composer install
+php artisan key:generate
+php artisan migrate --seed
+php artisan storage:link
+php artisan serve
+```
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
-
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-## Laravel Sponsors
-
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
-
-### Premium Partners
-
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
-
-## Contributing
-
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
-
-## Docker (Deploy simplificado)
-
-### 1) Configurar variaveis
-
-Copie o `.env.example` para `.env` e gere a chave da aplicacao:
-
+## Instalação com Docker
 ```bash
 cp .env.example .env
 docker compose run --rm app php artisan key:generate
-```
-
-### 2) Subir os containers
-
-```bash
 docker compose up -d --build
-```
-
-A aplicacao ficara disponivel em `http://localhost:8000`.
-
-### 3) Rodar migracoes e seeders
-
-```bash
 docker compose exec app php artisan migrate --seed --force
 ```
 
-### 4) Comandos uteis
+App: `http://localhost:8000`
 
-```bash
-# Ver logs da aplicacao
-docker compose logs -f app
+## Acesso administrativo
+- URL: `/painel`
+- A autenticação usa senha definida por variável de ambiente.
 
-# Executar comandos Artisan
-docker compose exec app php artisan <comando>
-
-# Derrubar o ambiente
-docker compose down
+### Importante
+Defina no `.env`:
+```env
+ADMIN_PANEL_PASSWORD=sua_senha_forte
 ```
+
+## Variáveis importantes
+- `APP_ENV=production` (produção)
+- `APP_DEBUG=false` (produção)
+- `APP_TIMEZONE=America/Bahia`
+- `APP_URL=https://seu-dominio.com`
+- `ADMIN_PANEL_PASSWORD=...`
+
+## Segurança e boas práticas para deploy
+- Nunca subir `.env` para o repositório.
+- Usar senha forte para admin.
+- Garantir HTTPS no domínio.
+- Rodar cache de config/rotas em produção:
+```bash
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+```
+- Rodar migrations em produção com atenção:
+```bash
+php artisan migrate --force
+```
+
+## Comandos úteis
+```bash
+# limpar caches
+php artisan optimize:clear
+
+# logs
+php artisan pail
+# ou
+ tail -f storage/logs/laravel.log
+```
+
+## Estrutura resumida
+- `resources/views/cardapio/*` -> telas públicas (cardápio/checkout)
+- `resources/views/admin/*` -> painel administrativo
+- `app/Http/Controllers/*` -> regras de fluxo
+- `app/Models/*` -> entidades (Pedido, Produto, Categoria, etc.)
+- `database/migrations/*` -> estrutura do banco
+
+## Observações
+- O carrinho fica no navegador do cliente (`localStorage`).
+- O total do pedido é recalculado no backend para segurança.
+- Loja pode operar com regras de funcionamento (dias/horários) e indisponibilidade por produto.
