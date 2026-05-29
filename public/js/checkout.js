@@ -1,6 +1,20 @@
 const WHATSAPP = '558899567857';
 const ROTAS_ENTREGA = window.ROTAS_ENTREGA || {};
 
+function mostrarErroCheckout(mensagem) {
+    const box = document.getElementById('checkout-erro');
+    if (!box) return;
+    box.textContent = mensagem;
+    box.classList.remove('hidden');
+}
+
+function limparErroCheckout() {
+    const box = document.getElementById('checkout-erro');
+    if (!box) return;
+    box.textContent = '';
+    box.classList.add('hidden');
+}
+
 function pegarCarrinho() {
     try {
         const valor = JSON.parse(localStorage.getItem('carrinho'));
@@ -114,10 +128,14 @@ function renderizarCheckout() {
 }
 
 async function enviarWhatsApp() {
+    limparErroCheckout();
+
     let carrinho = pegarCarrinho();
 
     if (carrinho.length === 0) {
-        alert('Seu carrinho está vazio.');
+        const msg = 'Seu carrinho está vazio.';
+        mostrarErroCheckout(msg);
+        alert(msg);
         return;
     }
 
@@ -132,29 +150,39 @@ async function enviarWhatsApp() {
     let observacao = document.getElementById('observacao').value.trim();
 
     if (!nome || !telefone) {
-        alert('Preencha nome e telefone.');
+        const msg = 'Preencha nome e telefone.';
+        mostrarErroCheckout(msg);
+        alert(msg);
         return;
     }
 
     if (!tipoAtendimento) {
-        alert('Selecione o tipo de atendimento.');
+        const msg = 'Selecione o tipo de atendimento.';
+        mostrarErroCheckout(msg);
+        alert(msg);
         return;
     }
 
     if (!pagamento) {
-        alert('Selecione a forma de pagamento.');
+        const msg = 'Selecione a forma de pagamento.';
+        mostrarErroCheckout(msg);
+        alert(msg);
         return;
     }
 
     if (tipoAtendimento === 'entrega' && !rotaSelecionada) {
-        alert('Selecione uma rota de entrega.');
+        const msg = 'Selecione uma rota de entrega.';
+        mostrarErroCheckout(msg);
+        alert(msg);
         return;
     }
 
     let taxaEntrega = obterTaxaEntregaAtual();
     if (tipoAtendimento === 'entrega') {
         if (!endereco) {
-            alert('Informe o endereço para entrega.');
+            const msg = 'Informe o endereço para entrega.';
+            mostrarErroCheckout(msg);
+            alert(msg);
             return;
         }
     } else {
@@ -194,8 +222,11 @@ async function enviarWhatsApp() {
                 }
             } catch (_) {
                 const erroTexto = await response.text();
-                console.error('Erro ao salvar pedido:', erroTexto);
+                if (erroTexto && erroTexto.trim()) {
+                    erroMensagem = `${erroMensagem} ${erroTexto.substring(0, 200)}`;
+                }
             }
+            mostrarErroCheckout(erroMensagem);
             alert(erroMensagem);
             return;
         }
@@ -203,7 +234,9 @@ async function enviarWhatsApp() {
         pedido = await response.json();
     } catch (erro) {
         console.error('Falha de rede ao salvar pedido:', erro);
-        alert('Nao foi possivel conectar ao servidor para salvar o pedido.');
+        const msg = 'Nao foi possivel conectar ao servidor para salvar o pedido.';
+        mostrarErroCheckout(msg);
+        alert(msg);
         return;
     }
 

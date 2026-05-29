@@ -65,6 +65,13 @@ Route::get('/checkout', function () {
         ->orderBy('nome')
         ->get(['nome', 'slug', 'endereco', 'taxa']);
 
+    if ($rotasEntrega->isEmpty()) {
+        $rotasEntrega = DeliveryRoute::query()
+            ->orderBy('ordem')
+            ->orderBy('nome')
+            ->get(['nome', 'slug', 'endereco', 'taxa']);
+    }
+
     return view('cardapio.checkout', compact('rotasEntrega'));
 })->name('checkout.index');
 Route::post('/pedidos', [PedidoController::class, 'store'])->name('pedidos.store');

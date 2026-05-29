@@ -194,6 +194,8 @@
 
             </div>
 
+            <div id="checkout-erro" class="hidden mt-4 rounded-2xl border border-red-200 bg-red-50 text-red-700 text-sm px-4 py-3"></div>
+
             <button
                 onclick="enviarWhatsApp()"
                 class="w-full bg-green-600 text-white rounded-2xl py-4 font-black mt-8"
@@ -224,7 +226,9 @@
 <script>
     window.ROTAS_ENTREGA = @json($rotasEntregaJson);
 </script>
-<script src="{{ asset('js/checkout.js') }}?v={{ @filemtime(public_path('js/checkout.js')) }}"></script>
+<script>
+{!! file_get_contents(public_path('js/checkout.js')) !!}
+</script>
 
 </body>
 </html>
