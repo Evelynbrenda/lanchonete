@@ -45,7 +45,7 @@ class DashboardController extends Controller
             ->leftJoin('produtos', 'pedido_items.produto_id', '=', 'produtos.id')
             ->whereBetween('pedidos.created_at', [$inicioMes, $fimMes])
             ->where('pedidos.status', '!=', 'cancelado')
-            ->selectRaw('pedido_items.produto_id, COALESCE(produtos.nome, "Produto removido") as nome, SUM(pedido_items.quantidade) as quantidade')
+            ->selectRaw("pedido_items.produto_id, COALESCE(produtos.nome, 'Produto removido') as nome, SUM(pedido_items.quantidade) as quantidade")
             ->groupBy('pedido_items.produto_id', 'produtos.nome')
             ->orderByDesc('quantidade')
             ->limit(10)
