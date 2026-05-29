@@ -53,13 +53,25 @@ function renderizarCheckout() {
     let totalElemento = document.getElementById('total-checkout');
     let subtotalElemento = document.getElementById('subtotal-checkout');
     let taxaEntregaElemento = document.getElementById('taxa-entrega-checkout');
-    let tipoAtendimento = document.getElementById('tipo-atendimento').value;
+    if (!resumo || !totalElemento || !subtotalElemento || !taxaEntregaElemento) return;
 
     let subtotalPedido = 0;
 
+    if (carrinho.length === 0) {
+        resumo.innerHTML = `
+            <div class="border rounded-2xl p-4 text-sm text-zinc-500">
+                Seu carrinho está vazio.
+            </div>
+        `;
+        subtotalElemento.innerText = formatarPreco(0);
+        taxaEntregaElemento.innerText = formatarPreco(0);
+        totalElemento.innerText = formatarPreco(0);
+        return;
+    }
+
     resumo.innerHTML = carrinho.map(item => {
 
-        let subtotalItem = Number(item.preco) * Number(item.quantidade);
+        let subtotalItem = (Number(item.preco) || 0) * (Number(item.quantidade) || 0);
 
         subtotalPedido += subtotalItem;
 
@@ -167,9 +179,17 @@ async function enviarWhatsApp() {
         });
 
         if (!response.ok) {
-            const erroTexto = await response.text();
-            console.error('Erro ao salvar pedido:', erroTexto);
-            alert(`Erro ao salvar pedido (${response.status}). Confira o console.`);
+            let erroMensagem = `Erro ao salvar pedido (${response.status}).`;
+            try {
+                const erroJson = await response.json();
+                if (erroJson && erroJson.message) {
+                    erroMensagem = erroJson.message;
+                }
+            } catch (_) {
+                const erroTexto = await response.text();
+                console.error('Erro ao salvar pedido:', erroTexto);
+            }
+            alert(erroMensagem);
             return;
         }
 
@@ -232,7 +252,6 @@ async function enviarWhatsApp() {
 
 }
 
-renderizarCheckout();
 function alterartipoatendimento() {
     let tipo = document.getElementById('tipo-atendimento').value;
 
@@ -260,4 +279,10 @@ document.getElementById('rota-entrega').addEventListener('change', () => {
 });
 document.getElementById('tipo-atendimento').addEventListener('change', alterartipoatendimento);
 document.getElementById('tipo-atendimento').addEventListener('change', renderizarCheckout);
+window.addEventListener('storage', (event) => {
+    if (event.key === 'carrinho') {
+        renderizarCheckout();
+    }
+});
 alterartipoatendimento();
+renderizarCheckout();
