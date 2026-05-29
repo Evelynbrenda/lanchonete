@@ -25,13 +25,14 @@ RUN apt-get update \
         git \
         unzip \
         libzip-dev \
+        libpq-dev \
         libpng-dev \
         libjpeg62-turbo-dev \
         libfreetype6-dev \
         libonig-dev \
         libxml2-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j"$(nproc)" pdo_mysql mbstring exif pcntl bcmath gd zip \
+    && docker-php-ext-install -j"$(nproc)" pdo_mysql pdo_pgsql mbstring exif pcntl bcmath gd zip \
     && a2enmod rewrite \
     && rm -rf /var/lib/apt/lists/*
 
