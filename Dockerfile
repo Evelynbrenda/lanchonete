@@ -6,6 +6,7 @@ RUN composer install \
     --prefer-dist \
     --no-interaction \
     --no-progress \
+    --no-scripts \
     --optimize-autoloader
 
 FROM node:20-alpine AS frontend
